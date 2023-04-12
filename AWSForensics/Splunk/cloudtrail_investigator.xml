@@ -11,9 +11,6 @@
 #  .PREREQUISITES
 #       1. sourcetype to parse nested json blocks
 #       2. log samples in {"Records":[{"eventVersion":....}}}]}
-#
-#   .LINK
-#.      https://github.com/zf-dfir/IR_General/Aws/Splunk/Cloudtrail_investigator.xml
 #   .NOTES
 #.      Author: Balasubramanya Chandrashekar
 #       Date: 2023-02-22
