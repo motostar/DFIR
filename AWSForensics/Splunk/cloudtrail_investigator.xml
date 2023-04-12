@@ -1,0 +1,754 @@
+#############################################################################################################################
+# 
+# Cloudtrail_Investigator.xml
+#
+#  .SYNOPSIS
+#     Splunk Dashboard for AWS Cloudtrail Accesslog
+#
+#  .DESCRIPTION
+#.      This xml produces interactive dashboard for Cloudtaril logs 
+#
+#  .PREREQUISITES
+#       1. sourcetype to parse nested json blocks
+#       2. log samples in {"Records":[{"eventVersion":....}}}]}
+#
+#   .LINK
+#.      https://github.com/zf-dfir/IR_General/Aws/Splunk/Cloudtrail_investigator.xml
+#   .NOTES
+#.      Author: Balasubramanya Chandrashekar
+#       Organization: ZeroFox
+#       Date: 2023-02-22
+#       Version: 1.0
+############################################################################################################################
+
+
+<form version="1.1" theme="dark">
+  <label>Cloudtrail_Investigator</label>
+  <search id="base_search">
+    <query>index="cloudtrail" sourcetype="cloudtrail" 
+    | iplocation sourceIPAddress
+    | table _time eventTime awsRegion errorCode errorMessage eventName eventSource eventType requestParameters responseElements requestParameters.instancesSet.items{} userIdentity.accessKeyId sourceIPAddress Country userAgent userIdentity.accountId userIdentity.arn userIdentity.principalId userIdentity.sessionContext.attributes.mfaAuthenticated userIdentity.type userIdentity.userName
+    </query>
+    <earliest>$time.earliest$</earliest>
+    <latest>$time.latest$</latest>
+  </search>
+  <fieldset submitButton="false">
+    <input type="time" token="time" searchWhenChanged="true">
+      <label>TimePicker</label>
+      <default>
+        <earliest>0</earliest>
+        <latest></latest>
+      </default>
+    </input>
+    <input type="dropdown" token="errorCode" searchWhenChanged="true">
+      <label>ErrorCodes</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+      <fieldForLabel>errorCode</fieldForLabel>
+      <fieldForValue>errorCode</fieldForValue>
+      <search base="base_search">
+        <query>| table errorCode
+| dedup errorCode</query>
+      </search>
+    </input>
+    <input type="dropdown" token="userIdentity.arn" searchWhenChanged="true">
+      <label>User ID ARN</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+      <fieldForLabel>userIdentity.arn</fieldForLabel>
+      <fieldForValue>userIdentity.arn</fieldForValue>
+      <search base="base_search">
+        <query>| table userIdentity.arn
+| dedup userIdentity.arn</query>
+      </search>
+    </input>
+    <input type="dropdown" token="accesskeyid" searchWhenChanged="true">
+      <label>accesskeyid</label>
+      <choice value="*">All</choice>
+      <fieldForLabel>userIdentity.accessKeyId</fieldForLabel>
+      <fieldForValue>userIdentity.accessKeyId</fieldForValue>
+      <search base="base_search">
+        <query>| table userIdentity.accessKeyId
+| dedup userIdentity.accessKeyId</query>
+      </search>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+  </fieldset>
+  <row>
+    <panel id="panel_layout">
+      <input id="input_link_split_by" type="link" token="unused" searchWhenChanged="true">
+        <label>Investigation Selector</label>
+        <choice value="Summary">Summary</choice>
+        <choice value="Incident">Incident</choice>
+        <choice value="Hunting">Hunting</choice>
+        <choice value="Disruption">Disruption</choice>
+        <default>Summary</default>
+        <change>
+          <condition value="Summary">
+            <set token="Summary">true</set>
+            <unset token="Incident"></unset>
+            <unset token="Hunting"></unset>
+            <unset token="Disruption"></unset>
+          </condition>
+          <condition value="Incident">
+            <set token="Incident">true</set>
+            <unset token="Summary"></unset>
+            <unset token="Hunting"></unset>
+            <unset token="Disruption"></unset>
+          </condition>
+          <condition value="Hunting">
+            <set token="Hunting">true</set>
+            <unset token="Summary"></unset>
+            <unset token="Incident"></unset>
+            <unset token="Disruption"></unset>
+          </condition>
+          <condition value="Disruption">
+            <set token="Disruption">true</set>
+            <unset token="Summary"></unset>
+            <unset token="Incident"></unset>
+            <unset token="Hunting"></unset>
+          </condition>
+        </change>
+      </input>
+      <html>
+        <style>
+          /* This Layout Panel Bottom Padding removed to merge Link Input with horizontal line */
+          #panel_layout .fieldset{
+            padding: 10px 12px 0px 12px !important;          
+          }
+          /* Increase width of Link input to have options in Single Line */
+          #input_link_split_by.input-link{
+            width: 2040px !important;
+          }
+          /* Change from flex to -webkit-box for side by side layout */
+          #input_radio_split_by.input-link div[data-component="splunk-core:/splunkjs/mvc/components/LinkList"]{
+            display: -webkit-box !important;
+          }
+          /* Create Button Border to make them appear as Tabs */
+          #input_link_split_by.input-link button{
+            width: 130px !important;
+            border-top-color: rgb(255, 255, 255);
+            border-top-style: solid;
+            border-top-width: 1px;
+            border-right-color: rgb(255, 255, 255);
+            border-right-style: solid;
+            border-right-width: 1px;
+            border-left-color: rgb(255, 255, 255);
+            border-left-style: solid;
+            border-left-width: 1px;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+          }
+          /* Hide link input bottom message section to merge with Horizontal line */
+          .dashboard-panel #input_link_split_by label,
+          #input_link_split_by .splunk-choice-input-message{
+            display: none !important;
+          }
+          /* Remove padding from horizontal line */
+          #panel_layout .panel-body.html{
+            padding: 0px !important;
+          }
+        </style>
+        <hr style="height:1px;border-width:0;color: black;background-color: white;margin: 0px;"/>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel id="ipanel_layout">
+      <html depends="$alwaysHideCSSOverrideForDashboard$">
+        <style>
+          #panel_chart_line_error_trend{
+            width: 70% !important;
+          }
+          #panel_chart_pie_error_split{
+            width: 30% !important;
+          }
+          /* Font Size Color Adjustment for Series Compare in Chart Legend */
+          div#chart_line_error_trending svg g.highcharts-legend g.highcharts-legend-item text tspan:nth-child(2){
+             font-size: 120% !important;
+             fill: cyan !important;
+             font-weight: bold !important;
+          }
+          /* Trellis Layout CSS */
+          #single_snapshot #facet-viz_groupby_field_log_level_groupby_value_INFO rect{
+            fill: #006D9C !important;
+          }
+          #single_snapshot #facet-viz_groupby_field_log_level_groupby_value_WARN rect{
+            fill: #F8BE34 !important;
+          }
+          #single_snapshot #facet-viz_groupby_field_log_level_groupby_value_WARNING rect{
+            fill: #F8BE34 !important;
+          }
+          #single_snapshot #facet-viz_groupby_field_log_level_groupby_value_ERROR rect{
+            fill: #DC4E41 !important;
+          }
+        </style>
+      </html>
+    </panel>
+  </row>
+  <row depends="$Summary$">
+    <panel>
+      <map>
+        <title>Access Summary</title>
+        <search>
+          <query>index="cloudtrail" sourcetype="cloudtrail" 
+| iplocation sourceIPAddress
+| search errorCode = "$errorCode$" userIdentity.arn = "$userIdentity.arn$"
+| geostats count by Country</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="mapping.type">marker</option>
+        <option name="refresh.display">progressbar</option>
+      </map>
+    </panel>
+    <panel>
+      <chart>
+        <title>AWS EventTypes</title>
+        <search base="base_search">
+          <query>| search errorCode="$errorCode$" userIdentity.arn="$userIdentity.arn$" 
+| stats count by eventName
+| sort - count
+| head 10</query>
+        </search>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisY.abbreviation">auto</option>
+        <option name="charting.axisY.scale">log</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.showDataLabels">all</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="height">388</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">small</option>
+        <option name="trellis.splitBy">eventName</option>
+      </chart>
+    </panel>
+  </row>
+  <row depends="$Summary$">
+    <panel>
+      <chart>
+        <title>Top IP with Denied Access</title>
+        <search base="base_search">
+          <query>| search errorCode = "AccessDenied"
+| stats count by sourceIPAddress
+| sort - count
+| head 10</query>
+        </search>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">collapsed</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.showDataLabels">all</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Top IP with AuthorizationFailure</title>
+        <search base="base_search">
+          <query>| search errorCode = "AuthorizationFailure"
+| stats count by sourceIPAddress
+| sort - count
+| head 10</query>
+        </search>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">collapsed</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.showDataLabels">all</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row depends="$Summary$">
+    <panel>
+      <table>
+        <title>API Errors</title>
+        <search base="base_search">
+          <query>| search errorCode IN ("Client.UnauthorizedOperation","Client.InvalidPermission.NotFound","Client.OperationNotPermitted","AccessDenied") userIdentity.arn="$userIdentity.arn$"
+| table eventTime, eventSource, eventName, errorCode, awsRegion, sourceIPAddress, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>S3 ListBuckets</title>
+        <search base="base_search">
+          <query>| search eventName = "ListBuckets" userIdentity.arn="$userIdentity.arn$"
+| table eventTime, eventSource, eventName, awsRegion, errorCode, userIdentity.arn, sourceIPAddress, userAgent
+| fillnull value="Not Available"</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$Summary$">
+    <panel>
+      <table>
+        <title>Cloudtrail Logs</title>
+        <search base="base_search">
+          <query>| search errorCode = "$errorCode$" userIdentity.arn="$userIdentity.arn$"
+| table _time eventTime awsRegion errorCode errorMessage eventName eventSource eventType requestParameters.instancesSet.items{} sourceIPAddress Country userAgent userIdentity.accountId userIdentity.arn userIdentity.principalId userIdentity.sessionContext.attributes.mfaAuthenticated userIdentity.type userIdentity.userName</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$Incident$">
+    <panel>
+      <table>
+        <title>IAM Principal and AWS Account associated with Access Key</title>
+        <search base="base_search">
+          <query>| search userIdentity.accessKeyId = "$accesskeyid$"
+| table sourceIPAddress Country userIdentity.accessKeyId awsRegion userIdentity.principalId userIdentity.arn</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>user agent anomalies for key</title>
+        <search base="base_search">
+          <query>| search userIdentity.accessKeyId = "$accesskeyid$"
+| stats count by userAgent
+| sort - count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$Incident$">
+    <panel>
+      <table>
+        <title>EC2 Instance profile - most frequent API calls</title>
+        <search base="base_search">
+          <query>| search userIdentity.principalId = "*i-*" 
+| stats count by eventName
+| sort - count
+| head 10</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>EC2 Instance profile - most denied API calls</title>
+        <search base="base_search">
+          <query>| search userIdentity.principalId = "*i-*" errorCode = "AccessDenied"
+| stats count by eventName
+| sort - count
+| head 10</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$Incident$">
+    <panel>
+      <table>
+        <title>All EC2 Instance Profiles - most denied instance profiles</title>
+        <search base="base_search">
+          <query>| search userIdentity.principalId = "*i-*" errorCode = "AccessDenied"
+| stats count by userIdentity.principalId
+| sort - count
+| head 10</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>All EC2 Instance Profiles - most denied event names</title>
+        <search base="base_search">
+          <query>| search userIdentity.principalId = "*i-*" errorCode= "AccessDenied" eventName != "AssumeRole"
+| stats count by eventSource,eventName
+| sort - count
+| head 10</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$Incident$">
+    <panel>
+      <table>
+        <title>EC2 Instance Profile interacting with IAM</title>
+        <search base="base_search">
+          <query>| search userIdentity.principalId = "*i-*" eventSource="iam.amazonaws.com" 
+| stats count by userIdentity.principalId eventSource,eventName
+| sort - count
+| head 10</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>EC2 Instance Profile enumerating S3</title>
+        <search base="base_search">
+          <query>| search userIdentity.principalId = "*i-*" eventSource="iam.amazonaws.com" eventName="ListBuckets"
+| stats count by userIdentity.principalId eventSource,eventName
+| sort - count
+| head 10</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$Hunting$">
+    <panel>
+      <chart>
+        <title>Most common API actions for a given time window</title>
+        <search base="base_search">
+          <query>| timechart span=1Y count by eventName</query>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Most common errorCodes for a given time window</title>
+        <search base="base_search">
+          <query>| timechart span=1Y count by errorCode</query>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+  <row depends="$Hunting$">
+    <panel>
+      <table>
+        <title>ConsoleLogin event from Root</title>
+        <search base="base_search">
+          <query>|search eventName = "ConsoleLogin" userIdentity.type = "Root"
+| table eventTime, eventSource, eventName, awsRegion, userIdentity.arn, sourceIPAddress, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Root account events</title>
+        <search base="base_search">
+          <query>| search userIdentity.type = "Root"
+| table eventTime, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, sourceIPAddress, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$Hunting$">
+    <panel>
+      <table>
+        <title>Remove MFA from an IAM User</title>
+        <search base="base_search">
+          <query>| search eventName IN ("DeactivateMFADevice", "DeleteVirtualMFADevice")
+| table eventTime sourceIPAddress, Country , eventSource, eventName, awsRegion, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>All IAM Changes</title>
+        <search base="base_search">
+          <query>|search eventSource = "iam.amazonaws.com" NOT eventName IN ("Get*", "List*", "Generate*")
+| stats count by userIdentity.principalId, eventName
+| sort - count</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$Hunting$">
+    <panel>
+      <table>
+        <title>Creation of IAM Principals</title>
+        <search base="base_search">
+          <query>| search eventSource = "iam.amazonaws.com" eventName IN ("CreateUser","CreateRole","CreateServiceLinkedRole")
+| stats count by userIdentity.principalId, eventName
+| sort - count</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Privilege Escalation: IAM Policy</title>
+        <search base="base_search">
+          <query>|search eventSource = "iam.amazonaws.com" eventName IN ("CreatePolicyVersion","SetDefaultPolicyVersion")
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$Hunting$">
+    <panel>
+      <table>
+        <title>Attempt to Add/Update Credentials</title>
+        <search base="base_search">
+          <query>| search eventName IN ("CreateAccessKey", "UpdateAccessKey",
+"CreateLoginProfile","UpdateLoginProfile",
+"CreateVirtualMFADevice","DeactivateMFADevice","DeleteVirtualMFADevice","EnableMFADevice"
+"CreateServiceSpecificCredential","UpdateServiceSpecificCredential",
+"ResetServiceSpecificSredential","DeleteServiceSpecificCredential",
+"UploadServerCertificate","DeleteServerCertificate",
+"UploadSigningCertificate","UpdateSigningCertificate","DeleteSigningCertificate",
+"UploadSSHPublicKey","UpdateSSHPublicKey","DeleteSSHPublicKey")
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Privilege Escalation: Adding permissions</title>
+        <search base="base_search">
+          <query>| search eventSource = "iam.amazonaws.com" eventName IN ("AttachUserPolicy", "DetachUserPolicy",
+"AttachRolePolicy", "DetachRolePolicy",
+"PutUserPolicy","PutGroupPolicy","PutRolePolicy",
+"DeleteUserPolicy","DeleteGroupPolicy","DeleteRolePolicy",
+"DeleteRolePermissionsBoundary")
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$Hunting$">
+    <panel>
+      <table>
+        <title>Privilege Escalation: Expand Access to an IAM Role</title>
+        <search base="base_search">
+          <query>| search eventSource = "iam.amazonaws.com" eventName IN ("UpdateAssumeRolePolicy")
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Modify Federated Access</title>
+        <search base="base_search">
+          <query>| search eventName IN ("CreateSAMLProvider","UpdateSAMLProvider","DeleteSAMLProvider",
+"CreateOpenIDConnectProvider","DeleteOpenIDConnectProvider","UpdateOpenIDConnectProviderThumbprint",
+"AddClientIDToOpenIDConnectProvider","RemoveClientIDFromOpenIDConnectProvider")
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$Hunting$">
+    <panel>
+      <table>
+        <title>S3 bucket modification</title>
+        <search base="base_search">
+          <query>| search eventName IN ("DeleteBucket","DeleteBucketPolicy",
+"PutBucketAcl","PutBucketCORS","PutBucketPolicy","PutReplicationConfiguration",
+"PutBucketLogging","PutEncryptionConfiguration","PutLifecycleConfiguration","PutObjectAcl",
+"RestoreObject")
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>EC2 edits</title>
+        <search base="base_search">
+          <query>| search eventsource = "ec2.amazonaws.com" eventName IN ("EnableEbsEncryptionByDefault","DisableEbsEncryptionByDefault")
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$Disruption$">
+    <panel>
+      <table>
+        <title>Cloudtrail Disruption</title>
+        <search base="base_search">
+          <query>| search eventName IN ("DeleteTrail","StopLogging","UpdateTrail",
+"PutEventSelectors")
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Disrupt Config Recording, Evaluation, and Remediation</title>
+        <search base="base_search">
+          <query>|search eventSource = "config.amazonaws.com" eventName IN ("DeleteConfigRule","DeleteOrganizationConfigRule",
+"DeleteConfigurationAggregator","DeleteConfigurationRecorder",
+"DeleteConformancePack","DeleteOrganizationConformancePack",
+"DeleteDeliveryChannel","PutDeliveryChannel",
+"DeleteRemediationConfiguration","DeleteRetentionConfiguration",
+"PutConfigRule", "PutConfigurationAggregator","PutConformancePack",
+"PutOrganizationConfigRule","PutOrganizationConformancePack",
+"PutRemediationConfigurations","PutRemediationExceptions",
+"PutRetentionConfiguration",
+"StopConfigurationRecorder")
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$Disruption$">
+    <panel>
+      <table>
+        <title>GuardDuty Disruption</title>
+        <search base="base_search">
+          <query>| search eventName IN ("CreateFilter","CreateIPSet","CreateSampleFindings","CreateThreatIntelSet",
+"DeleteDetector","DeleteMembers","DeletePublishingDestination","DeleteThreatIntelSet",
+"DisassociateFromMasterAccount","DisassociateMembers","StopMonitoringMembers",
+"UpdateDetector","UpdateFilter","UpdateIPSet","UpdatePublishingDestination","UpdateThreatIntelSet")
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>GuardDuty Disruption</title>
+        <search base="base_search">
+          <query>| search eventName IN ("ListMembers","GetMembers",
+"ListDetectors","GetDetector",
+"ListFilters","GetFilter",
+"ListIPSets","GetIPSet",
+"ListThreatIntelSets","GetThreatIntelSet")
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$Disruption$">
+    <panel>
+      <table>
+        <title>IAM Access Analyzer</title>
+        <search base="base_search">
+          <query>|search eventName IN ("CreateArchiveRule","DeleteAnalyzer",
+"UpdateArchiveRule","UpdateFindings")
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Disruption of Inspector</title>
+        <search base="base_search">
+          <query>|search eventName IN ("DeleteAssessmentRun","DeleteAssessmentTarget",
+"DeleteAssessmentTemplate","UnsubscribeFromEvent","UpdateAssessmentTarget")
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$Disruption$">
+    <panel>
+      <table>
+        <title>Disrupt VPC flow logs</title>
+        <search base="base_search">
+          <query>|search eventName IN ("DeleteFlowLogs")
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>S3 permission update</title>
+        <search base="base_search">
+          <query>| search eventName IN ("PutAccessPointPolicy",
+    "PutAccountPublicAccessBlock",
+    "PutBucketAcl",
+    "PutBucketCORS",
+    "PutBucketPolicy",
+    "PutBucketPublicAccessBlock",
+    "PutObjectAcl") 
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$Disruption$">
+    <panel>
+      <table>
+        <title>S3 Data Management</title>
+        <search base="base_search">
+          <query>|search eventName IN ("PutBucketLogging",
+    "PutBucketWebsite",
+    "PutEncryptionConfiguration",
+    "PutLifecycleConfiguration",
+    "PutReplicationConfiguration",
+    "ReplicateObject",
+    "RestoreObject")
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>SecurityHub Service Disruption</title>
+        <search base="base_search">
+          <query>| search eventName IN ("BatchDisableStandards",
+"DeleteActionTarget","DeleteMembers",
+"DisableImportFindingsForProduct","DisableSecurityHub",
+"DisassociateFromMasterAccount","DisassociateMembers",
+"UpdateActionTarget","UpdateStandardsControl")
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row depends="$Disruption$">
+    <panel>
+      <table>
+        <title>Web Application Firewall Disruption</title>
+         <search base="base_search">
+          <query>| search eventName IN ("DeleteFirewallManagerRuleGroups","DeleteIPSet",
+"DeleteLoggingConfiguration","DeletePermissionPolicy","DeleteRegexPatternSet",
+"DeleteRuleGroup","DeleteWebACL","DisassociateWebACL",
+"PutLoggingConfiguration","PutPermissionPolicy",
+"UpdateIPSet","UpdateRegexPatternSet","UpdateRuleGroup","UpdateWebACL")
+| table eventTime, sourceIPAddress, Country, eventSource, eventName, awsRegion, errorCode, errorMessage, userIdentity.arn, userAgent</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+</form>
