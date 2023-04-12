@@ -12,11 +12,8 @@
 #       1. index pattersn matching the one in json file
 #       2. log samples in {"Records":[{"eventVersion":....}}}]}
 #
-#   .LINK
-#.      https://github.com/zf-dfir/IR_General/Aws/logstash/Cloudtrail investigator
 #   .NOTES
 #.      Author: Balasubramanya Chandrashekar
-#       Organization: ZeroFox
 #       Date: 2023-01-31
 #       Version: 1.
 ############################################################################################################################
