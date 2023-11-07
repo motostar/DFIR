@@ -20,8 +20,5 @@
 > `python3  favicon.py`
 
 5.  In the same directory where this file is saved, there should be a new .xlsx file created containing the results from shodan - with contents looking something like this: (You should see each corresponding favicon root domain in column A):
-    
-
-LINK TO EXAMPLE: [Example Shodan Results](https://docs.google.com/spreadsheets/d/1Mgg8JCPWMkofkC08t4j_7meQUZbm1pU3Pm5BtjVM8xk/edit?usp=sharing)
 
 ![](https://lh7-us.googleusercontent.com/KyCJVAJOGwbwYK72F9t7O1e2rttwSW8AyVjDE_lM1j0Wlv0SSVnmg73L3U1NGTC4VI7tVhGyh_PqzabfDRCRPCqMckaVZfmJg8bLQHExX5mVS7JPnK2ahP_WTEe3DE9ByqkNw7w2NtQAGlwh_nbv9YU)
