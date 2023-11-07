@@ -1,4 +1,4 @@
-Favicon Search via Shodan
+## Favicon Search via Shodan
 
 1.  Copy/clone this script into host with python 3 installed: 
     
@@ -6,7 +6,6 @@ Favicon Search via Shodan
     
 3.  In the terminal enter the following commands separately to install the Shodan library and the mmh3 library: (This is just a one time thing - You will not need to do this more than once)
    
-
 >     pip3  install  shodan
 >     
 >     pip3  install  mmh3==3.0.0
@@ -20,7 +19,7 @@ Favicon Search via Shodan
 
 > `python3  favicon.py`
 
-6.  In the same directory where this file is saved, there should be a new .xlsx file created containing the results from shodan - with contents looking something like this: (You should see each corresponding favicon root domain in column A):
+5.  In the same directory where this file is saved, there should be a new .xlsx file created containing the results from shodan - with contents looking something like this: (You should see each corresponding favicon root domain in column A):
     
 
 LINK TO EXAMPLE: [Example Shodan Results](https://docs.google.com/spreadsheets/d/1Mgg8JCPWMkofkC08t4j_7meQUZbm1pU3Pm5BtjVM8xk/edit?usp=sharing)
